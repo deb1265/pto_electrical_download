@@ -1,124 +1,18 @@
-const { spawn } = require('child_process');
+const puppeteer = require('puppeteer');
 const { google } = require('googleapis');
 const keys = require('./servicekey.json');
+const axios = require('axios');
+const cheerio = require('cheerio');
+const fs = require('fs');
+const qs = require('querystring');
 const caspioTokenUrl = 'https://c1abd578.caspio.com/oauth/token';
 const clientID = 'cae94860c0ae4fb5aa60756fba6ddfbce64964705b73ac1cfb';
 const clientSecret = 'e3bb6f52ab914dfeaaa7a3a6814864ddfa3c74b49832163f92';
-const axios = require('axios');
-const qs = require('querystring');
-const GoggleApi = 'AIzaSyDPuTFidqOSRkhWfv1BxJP8o4pFWnxhJzQ';
-
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function fetchCaspioData(accessToken, url, updateData = null, method = 'GET') {
-	
-    try {
-        if (updateData) {
-            const response = await axios.put(url, updateData, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            });
-            return response.data;
-        } else {
-            const response = await axios.get(url, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            });
-            return response.data;
-        }
-    } catch (error) {
-        console.error(`Error in fetchCaspioData: ${error}`);
-        throw error;
-    }
-}
-async function caspiomain(CIDvalue, accessToken) {
-    try {
-        const masterTableUrl = `https://c1abd578.caspio.com/rest/v2/tables/MasterTable/records?q.select=Name%2C%20Address1%2C%20Phone1%2C%20email&q.where=CID=${CIDvalue}`;
-        const solarProcessUrl = `https://c1abd578.caspio.com/rest/v2/tables/SolarProcess/records?q.select=Contract_Price%2CPanel%2CSystem_Size_Sold%2CBlock%2CLot%2CBin%2CFlood_Zone%2CNYC_LI%2COath_Ecb_Violation%2CFlood_Zone%2CLandmark%2CBorough%2CStories%2CCB&q.where=CustID=${CIDvalue}`;
-        const signedcontractsurl = `https://c1abd578.caspio.com/rest/v2/tables/Signed_contracts/records?q.select=DownloadLink&q.where=CustID=${CIDvalue}`;
-        const masterDataResponse = await fetchCaspioData(accessToken, masterTableUrl);
-		//console.log(masterDataResponse);
-        const solarProcessResponse = await fetchCaspioData(accessToken, solarProcessUrl);
-		//console.log(solarProcessResponse);
-        const signedcontractResponse = await fetchCaspioData(accessToken, signedcontractsurl);
-		//console.log(signedcontractResponse);
-        const signedData = signedcontractResponse.Result[signedcontractResponse.Result.length - 1];
-        const masterData = masterDataResponse.Result[0];
-        const solarData = solarProcessResponse.Result[0];
-        const combinedData = { ...masterData, ...solarData, ...signedData };
-        let contractlink = combinedData.DownloadLink;
-        let contractfileid = contractlink.split('id=')[1].split('&export=download')[0];
-        const originalAddress = combinedData.Address1;
-        const response = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(originalAddress)}&key=${GoggleApi}`);
-        const Address = response.data.results[0].formatted_address;
-        const Contract_Price = combinedData.Contract_Price;
-        const Panel = combinedData.Panel;
-        const Size = combinedData.System_Size_Sold;
-        const Block = combinedData.Block;
-        const Lot = combinedData.Lot;
-        const Bin = combinedData.Bin;
-        const CB = combinedData.CB;
-        const Flood_Zone = combinedData.Flood_Zone;
-        const Oath_Ecb_Violation = combinedData.Oath_Ecb_Violation;
-        const Landmark = combinedData.Landmark;
-        const Borough = combinedData.Borough;
-        const lead = combinedData.Lead;
-        const NYC_LI = combinedData.NYC_LI;
-        const Stories = combinedData.Stories;
-        let FullName = combinedData.Name; // Replace with your actual full name variable
-        let nameParts = FullName.split(' ');
-        let Firstname;
-        let Lastname;
-        if (nameParts.length >= 2) {
-            Firstname = nameParts[0];
-            Lastname = nameParts[nameParts.length - 1];
-        } else if (nameParts.length === 1) {
-            Firstname = nameParts[0];
-            Lastname = "";  // No last name available
-        } else {
-            console.error(`Could not parse first and last name from ${FullName}`);
-        }
-        let Addressp = Address;
-        let addressParts = Addressp.split(',');
-        // Get the house and street
-        let houseStreetParts = addressParts[0].trim().split(' ');
-        let houseNumberRegex = /^[\d\-A-Za-z]+/;  // Matches digits, hyphens and letters at the start
-        let houseNumberMatch = houseStreetParts[0].match(houseNumberRegex);
-        let House;
-        let Street;
-        if (houseNumberMatch) {
-            House = houseNumberMatch[0];
-            Street = houseStreetParts.slice(1).join(' ');
-        } else {
-            console.error(`Could not parse house number and street from ${addressParts[0]}`);
-        }
-        // Get the city
-        let City = addressParts[1].trim();
-        // Get the zip
-// Use a regex to find the ZIP code in the entire address string
-let zipRegex = /\b\d{5}\b/;  // Matches exactly 5 digits
-let zipMatch = Addressp.match(zipRegex);
-let Zip;
-if (zipMatch) {
-    Zip = zipMatch[0];
-} else {
-    console.error(`Could not find ZIP code in ${Addressp}`);
-}
-
-        return { Firstname, Lastname, FullName, Address, House, Street, City, lead, Zip, Landmark, CB, Panel, NYC_LI, Size, Stories, Borough, contractfileid, Contract_Price, Block, Lot, Bin, Flood_Zone, Oath_Ecb_Violation };
-    } catch (error) {
-        console.error(`Error in main: ${error}`);
-        if (error.response) {
-            console.error('Error status:', error.response.status);
-            console.error('Error data:', error.response.data);
-        }
-    }
-}
-
+const GoggleApi = 'AIzaSyDPuTFidqOSRkhWfv1BxJP8o4pFWnxhJzQ'
+const { spawn } = require('child_process');
+const { PDFDocument } = require('pdf-lib');
+const path = require('path');
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function caspioAuthorization() {
     const requestBody = {
@@ -140,13 +34,11 @@ async function caspioAuthorization() {
         throw error;
     }
 }
-
-
 async function fetchSpreadsheetData(auth) {
     const sheets = google.sheets({ version: 'v4', auth });
     const spreadsheetId = '1aXRq3yh7KMwFJmTBWGL74Hp56Vns8XGcsqwznIkO2tc';
-    const range = 'Sheet1!A2:A60';
-    
+    const range = 'Sheet1!A2:A188';
+
     let response = await sheets.spreadsheets.values.get({
         spreadsheetId,
         range,
@@ -162,127 +54,255 @@ async function fetchSpreadsheetData(auth) {
             }
         });
         return custIDs;
-        console.log(custIDs);
     } else {
         console.log('No data found.');
         return null;
     }
 }
-function runScript(scriptPath, ...args) {
-    return new Promise((resolve, reject) => {
-        let dataString = '';
-        const process = spawn('node', [scriptPath, ...args]);
-
-        process.stdout.on('data', (data) => {
-            dataString += data.toString();
-        });
-
-        process.stderr.on('data', (data) => {
-            console.error(`stderr: ${data}`);
-        });
-
-        process.on('close', (code) => {
-            if (code !== 0) {
-                reject(new Error(`child process exited with code ${code}`));
-                return;
-            }
-            resolve(dataString);
-        });
-    });
-}
-
-async function main(Cust_ID, Lastname, FullName, house_street, electrical_ID) {
+async function fetchCaspioData(accessToken, url, data = null, method = 'GET') {
     try {
-        console.log(`Running ptoletter for cust_id = ${Cust_ID}`);
-        let ptoletterOutput;
-        try {
-            console.log("Before running ptoletter.js");
-            ptoletterOutput = await runScript('./ptoletter.js', Cust_ID, Lastname, FullName, house_street);
-            console.log("After running ptoletter.js");
-            console.log("Output from ptoletter.js:", ptoletterOutput);
-        } catch (error) {
-            console.error("Error while running ptoletter.js:", error.message);
+        let response;
+        const headers = {
+            'Authorization': `Bearer ${accessToken}`
+        };
+
+        switch (method.toUpperCase()) {
+            case 'GET':
+                response = await axios.get(url, { headers });
+                break;
+            case 'POST':
+                response = await axios.post(url, data, { headers });
+                break;
+            case 'PUT':
+                response = await axios.put(url, data, { headers });
+                break;
+            default:
+                throw new Error(`Unsupported method: ${method}`);
         }
-        let outputLines = ptoletterOutput.trim().split('\n');
-        let jsonOutput = outputLines[outputLines.length - 1];
-        let { ptodate: Ptodate, filepath } = extractOutputData(jsonOutput);
-        console.log("Number of output lines from ptoletter.js:", outputLines.length);
-        console.log("JSON output from ptoletter.js:", jsonOutput);
-        await sleep(5000);
 
-        if (electrical_ID && electrical_ID !== "") { // Fixed condition check
-            console.log(`Running electricalpermit.js for cust_id = ${Cust_ID}`);
-            await runScript('./electricalpermit.js', Cust_ID);
-        } else {
-            console.log(`electricalpermit.js already ran for this customer before. Skipping...`);
-        }
-        await sleep(2000);
-      console.log(`Running electricaltest for cust_id = ${Cust_ID}`);
-        const passinspection = await runScript('./electricaltest.js', Cust_ID, Lastname);
-        let outputLines1 = passinspection.trim().split('\n');
-        let jsonOutput1 = outputLines1[outputLines1.length - 1];
-        let { passdate, passfilepath } = extractOutputData(jsonOutput1);
-        //console.log(passinspection);
-        console.log(outputLines1);
-        //console.log(passdate);
-        //console.log(passfilepath);
-        await sleep(2000);
-
-        console.log(`Running nyccloseout for cust_id = ${Cust_ID}`);
-        await runScript('./nyccloseout.js', Cust_ID, Ptodate, filepath, passdate, passfilepath); //, applicationdate, electricalpermitnumber, passdate, passfilepath
-
-        await sleep(10000);
+        return response.data;
     } catch (error) {
-        console.error(`Error in main: ${error.message}`);
+        console.error(`Error in fetchCaspioData: ${error}`);
+        throw error;
     }
 }
 
-function extractOutputData(output) {
-    if (typeof output === 'string' && output.startsWith('{') && output.endsWith('}')) {
-        try {
-            return JSON.parse(output);
-        } catch (err) {
-            throw new Error('Error parsing JSON data.');
+async function caspiomain(CIDvalue, accessToken) {
+    try {
+        const masterTableUrl = `https://c1abd578.caspio.com/rest/v2/tables/MasterTable/records?q.select=Name%2C%20Address1%2C%20Phone1%2C%20email&q.where=CID=${CIDvalue}`;
+        const solarProcessUrl = `https://c1abd578.caspio.com/rest/v2/tables/SolarProcess/records?q.select=NYC_LI%2C%20Finance%2C%20System_Size_Sold%2C%20Panel%2C%20Number_Of_Panels%2C%20Contract_Price%2C%20Canopy_Used%2C%20Affordable%2C%20Solarinsure%2C%20number_of_systems&q.where=CustID=${CIDvalue}`;
+
+        const masterDataResponse = await fetchCaspioData(accessToken, masterTableUrl);
+        const solarProcessResponse = await fetchCaspioData(accessToken, solarProcessUrl);
+
+        const masterData = masterDataResponse.Result[0];
+        const solarData = solarProcessResponse.Result[0];
+
+        const combinedData = { ...masterData, ...solarData };
+
+        const originalAddress = combinedData.Address1;
+
+        const response = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(originalAddress)}&key=${GoggleApi}`);
+        const Address = response.data.results[0].formatted_address;
+		const houseAndStreet = Address.split(',')[0]; 
+        const CID = CIDvalue;
+        const Name = combinedData.Name;
+        const Phone = combinedData.Phone1;
+        const email = combinedData.email;
+        const Price = combinedData.Contract_Price;
+        const NYC_LI = combinedData.NYC_LI;
+        const Finance = combinedData.Finance;
+        const Size = combinedData.System_Size_Sold;
+        const Panel = combinedData.Panel;
+        const Panel_count = combinedData.Number_Of_Panels;
+        const permit_type = combinedData.Canopy_Used;
+        const Affordable = combinedData.Affordable;
+        const Solarinsure = combinedData.Solarinsure;
+
+        return { CID, Name, Address,houseAndStreet, Phone, email, Price, NYC_LI, Finance, Size, Panel, Panel_count, permit_type, Affordable, Solarinsure };
+    } catch (error) {
+        console.error(`Error in main: ${error}`);
+        if (error.response) {
+            console.error('Error status:', error.response.status);
+            console.error('Error data:', error.response.data);
         }
+    }
+}
+async function fetchSpreadsheetDataForSheet2(auth) {
+    const sheets = google.sheets({ version: 'v4', auth });
+    const spreadsheetId = '1147-lHNrN1eGso_Gb0KXzgVf3_Vlpw1IpnQAdzwZ-GY';
+    
+    try {
+        let response = await sheets.spreadsheets.get({
+            spreadsheetId: spreadsheetId,
+            ranges: ['Sheet2!A1:D287'],
+            fields: 'sheets.data.rowData.values.hyperlink,sheets.data.rowData.values.userEnteredValue'
+        });
+
+        const rows = response.data.sheets[0].data[0].rowData;
+        let extractedData = [];
+
+        for (let row of rows) {
+            let dateofopening = row.values[0] && row.values[0].userEnteredValue ? row.values[0].userEnteredValue.stringValue : "N/A";
+            let applicationnumber = row.values[1].userEnteredValue ? row.values[1].userEnteredValue.stringValue : null;
+            let applicationLink = row.values[1].hyperlink;
+            let fullAddress = row.values[3].userEnteredValue ? row.values[3].userEnteredValue.stringValue : null;
+            let addressParts = fullAddress.split(',');
+let mainParts = addressParts[0].split(' ');  // split the main address part by space
+
+// exclude last three elements (borough, "NY", and ZIP code)
+let houseAndStreet = mainParts.slice(0, -3).join(' ');
+
+
+
+
+            
+            extractedData.push({
+                dateofopening: dateofopening,
+                applicationnumber: applicationnumber,
+                applicationLink: applicationLink,
+                houseAndStreet: houseAndStreet
+            });
+        }
+
+        return extractedData;
+        //console.log(extractedData);
+    } catch (error) {
+        console.error('Error fetching spreadsheet data:', error);
+    }
+}
+
+async function fetchSpreadsheetbis(auth) {
+    const sheets = google.sheets({ version: 'v4', auth });
+    const spreadsheetId = '1147-lHNrN1eGso_Gb0KXzgVf3_Vlpw1IpnQAdzwZ-GY';
+    const range = 'Sheet1!A1:H1200';
+
+    let response = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range,
+    });
+
+    let rows = response.data.values;
+    let data = [];  // This will hold the housestreets and permitnumbers
+
+    if (rows.length) {
+        // Skip the header
+        for(let i = 1; i < rows.length; i++) {
+            let row = rows[i];
+            let housestreet = row[7];  // Column H
+            let fullPermitNumber = row[1];  // Column B
+            let extractedPermitNumber = fullPermitNumber ? fullPermitNumber.split('-')[0] : null;
+
+            if (housestreet && extractedPermitNumber) {
+                data.push({
+                    housestreet: housestreet,
+                    permitnumber: extractedPermitNumber
+                });
+            }
+        }
+        return data;
     } else {
-        throw new Error('Unexpected output format.');
+        console.log('No data found.');
+        return [];
     }
+}
+function normalizeAddress(address) {
+    let normalized = address.toLowerCase();
+
+    // Convert numbers separated by a dash
+    normalized = normalized.replace(/(\d+)-(\d+)/g, '$1$2');
+
+    // Replace specific words with their full version
+    normalized = normalized.replace(/\be\b/g, 'east');
+    normalized = normalized.replace(/\bw\b/g, 'west');
+    normalized = normalized.replace(/\bn\b/g, 'north');
+    normalized = normalized.replace(/\bs\b/g, 'south');
+    normalized = normalized.replace(/\bpl\b/g, 'place');
+    normalized = normalized.replace(/\brd\b/g, 'road');
+    normalized = normalized.replace(/\bave\b|\bav\b/g, 'avenue');
+    normalized = normalized.replace(/\bst\b/g, 'street');
+    normalized = normalized.replace(/\bblvd\b/g, 'boulevard');
+
+    // Remove ordinal indicators from street numbers
+    normalized = normalized.replace(/(\d+)(st|nd|rd|th)\b/g, '$1');
+
+    // Remove any extra spaces
+    normalized = normalized.replace(/\s+/g, ' ').trim();
+
+    return normalized;
 }
 
 
-async function processAllCustomers() {
-    const client = new google.auth.JWT(
-        keys.client_email,
-        null,
-        keys.private_key,
-        [
-            'https://www.googleapis.com/auth/spreadsheets',
-            'https://www.googleapis.com/auth/drive',
-            'https://www.googleapis.com/auth/drive.readonly'
-        ],
-    );
-    await client.authorize();
-    console.log("Successfully connected to Caspio!");
-    const accessToken = await caspioAuthorization();
 
-    const sheetData = await fetchSpreadsheetData(client);
-    for (let i = 0; i < sheetData.length; i++) {
-        let Cust_ID = sheetData[i];
-        const electricpermitexistsurl = `https://c1abd578.caspio.com/rest/v2/tables/electricalpermit/records?q.select=passdate&q.where=CID=${Cust_ID}`;
-        let electrical_IDexist = await fetchCaspioData(accessToken, electricpermitexistsurl);
-        console.log(electrical_IDexist);
-        // Check if Result[0] exists and if it does, get the passdate. Otherwise, set it to null.
-        let electrical_ID = electrical_IDexist.Result && electrical_IDexist.Result[0] ? electrical_IDexist.Result[0].passdate : null;
-        console.log(electrical_ID);
-        let caspioData = await caspiomain(Cust_ID, accessToken);
-        console.log(caspioData);
-        const Lastname = caspioData.Lastname;
-        let FullName = caspioData.FullName;
-        let house_street = `${caspioData.House} ${caspioData.Street}`;
-        console.log(house_street);
-
-        await main(Cust_ID, Lastname, FullName, house_street, electrical_ID);
-    }
-
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
-processAllCustomers()
+
+async function main() {
+    try {
+        const client = new google.auth.JWT(
+            keys.client_email,
+            null,
+            keys.private_key,
+            [
+                'https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/drive'
+            ],
+        );
+
+        await client.authorize();
+        const accessToken = await caspioAuthorization();
+        console.log("Successfully connected to googlesheet!");
+        console.log("Successfully connected to caspio!");
+
+        //const sheetData = await fetchSpreadsheetData(client);
+        const sheetData = [1];
+        for (let i = 0; i < sheetData.length; i++) {
+			sleep(10000);
+            //////////// let custID = sheetData[i];
+            let custID = process.argv[2];
+            //let custID = '273';
+            let caspioData = await caspiomain(custID, accessToken);
+            console.log("Data: ", caspioData);
+
+            let normalizedCaspioAddress = normalizeAddress(caspioData.houseAndStreet);
+            const bisData = await fetchSpreadsheetDataForSheet2(client);
+            //console.log(bisData);
+
+            let matchingAddress = bisData.find(entry => {
+                let normalizedBisAddress = normalizeAddress(entry.houseAndStreet);
+                //console.log(normalizedBisAddress);
+                return normalizedCaspioAddress === normalizedBisAddress;
+            });
+            let outputData = {}; // Initiate the outputData object here
+            if (matchingAddress) {
+                let applicationdate = matchingAddress.dateofopening;
+                let electricalpermitnumber = matchingAddress.applicationnumber;
+                let applicationLink = matchingAddress.applicationLink;
+
+                let updateUrl = `https://c1abd578.caspio.com/rest/v2/tables/electricalpermit/records?q.where=CID=${custID}`;
+
+                let updatedData = {
+                    "CID": custID,
+                    "DateOfOpening": applicationdate,
+                    "ApplicationNumber": electricalpermitnumber,
+                    "applicationLink": applicationLink
+                };
+
+                console.log('Data to be updated:', updatedData);
+                await fetchCaspioData(accessToken, updateUrl, updatedData, 'POST');
+				console.log(`caspiodata updated`);
+            } else {
+                console.log(`No matching address found for ${normalizedCaspioAddress}`);
+            }
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+main().then(output => {
+    //console.log('Final output:', output);
+}).catch(err => {
+    console.error('Error in main function:', err);
+});
