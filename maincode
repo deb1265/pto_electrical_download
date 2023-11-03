@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer');
 const { google } = require('googleapis');
-const keys = require('./servicekey.json');
+const keys = JSON.parse(process.env.servicekey);
 const axios = require('axios');
 const cheerio = require('cheerio');
 const fs = require('fs');
