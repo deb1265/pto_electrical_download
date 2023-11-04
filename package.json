@@ -5,7 +5,7 @@
   "test": "react-scripts test",
   "eject": "react-scripts eject"
 },
-"dependencies": {
+  "dependencies": {
     "@adobe/pdfservices-node-sdk": "^3.4.2",
     "@google-cloud/local-auth": "^2.1.0",
     "@google-cloud/storage": "^6.11.0",
@@ -50,6 +50,7 @@
     "puppeteer": "^20.9.0",
     "qs": "^6.11.2",
     "querystring": "^0.2.1",
+    "react-dom": "^18.2.0",
     "react-scripts": "^5.0.1",
     "readline-sync": "^1.4.10",
     "server-destroy": "^1.0.1",
