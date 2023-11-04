@@ -51,7 +51,7 @@
     "qs": "^6.11.2",
     "querystring": "^0.2.1",
     "react-dom": "^18.2.0",
-    "react-scripts": "^3.0.1",
+    "react-scripts": "^5.0.0",
     "readline-sync": "^1.4.10",
     "server-destroy": "^1.0.1",
     "sharp": "^0.32.6",
