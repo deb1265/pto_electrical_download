@@ -57,7 +57,7 @@
     "stream": "^0.0.2",
     "tesseract.js": "^4.1.1",
     "xlsx": "^0.18.5",
-    "react-dom": "^18.0.0", // Use the latest version or the one compatible with your project
+    "react-dom": "^18.0.0"// Use the latest version or the one compatible with your project
 
   },
   "devDependencies": {
