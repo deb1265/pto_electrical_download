@@ -1,58 +1,11 @@
 # netlify.toml
 
 [build]
-  publish = "build"            # Directory to publish (this should be your build output directory)
-  command = "npm run build"    # Build command
+  command = "npm run build"
+  publish = "build/"
 
-# If you are using environment variables, set them like this:
-[build.environment]
-  NODE_VERSION = "14.17.0"      # Set the Node.js version
-  NPM_VERSION = "6.14.13"       # Set the NPM version
-
-# Redirects and rewrites
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-
-# Header rules, you can uncomment if needed
-# [[headers]]
-#   for = "/*"
-#   [headers.values]
-#   X-Frame-Options = "DENY"
-#   X-XSS-Protection = "1; mode=block"
-
-# If you have Netlify Functions, specify the directory like this
-# [functions]
-#   directory = "functions"
-
-# Add any plugins you are using
-# [[plugins]]
-#   package = "netlify-plugin-your-plugin"
-
-# Specify custom headers for specific paths
-# [[headers]]
-#   for = "/path/to/resource"
-#   [headers.values]
-#   Content-Security-Policy = "frame-ancestors 'self'"
-
-# Processing settings for forms, asset optimization, etc.
-# [build.processing]
-#   skip_processing = false
-# [build.processing.css]
-#   bundle = true
-#   minify = true
-# [build.processing.js]
-#   bundle = true
-#   minify = true
-# [build.processing.html]
-#   pretty_urls = true
-# [build.processing.images]
-#   compress = true
-
-# Context specific configurations, you can specify settings for production or deploy-preview
-# [context.production]
-#   ...
-# [context.deploy-preview]
-#   ...
 
