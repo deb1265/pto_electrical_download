@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
 
-function App() {
+const App = () => {
   const [maincodeOutput, setMaincodeOutput] = useState('');
 
   useEffect(() => {
-    // Fetch the output when the component mounts
-    fetch('/run-maincode')
-      .then(response => response.text())
-      .then(output => {
+    const fetchMaincodeOutput = async () => {
+      try {
+        const response = await fetch('/run-maincode');
+        const output = await response.text();
         setMaincodeOutput(output);
-      });
+      } catch (error) {
+        console.error('Failed to fetch maincode output:', error);
+        setMaincodeOutput('Error fetching output.');
+      }
+    };
+
+    fetchMaincodeOutput();
   }, []);
 
   return (
@@ -18,7 +24,6 @@ function App() {
       <pre>{maincodeOutput}</pre>
     </div>
   );
-}
+};
 
 export default App;
-
