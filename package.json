@@ -1,11 +1,11 @@
 {
-"scripts": {
-  "start": "react-scripts start",
-  "build": "react-scripts build",
-  "test": "react-scripts test",
-  "eject": "react-scripts eject"
-},
- "dependencies": {
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
     "@adobe/pdfservices-node-sdk": "^3.4.2",
     "@google-cloud/local-auth": "^2.1.0",
     "@google-cloud/storage": "^6.11.0",
@@ -50,6 +50,7 @@
     "puppeteer": "^20.9.0",
     "qs": "^6.11.2",
     "querystring": "^0.2.1",
+    "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-scripts": "^5.0.0",
     "readline-sync": "^1.4.10",
@@ -66,3 +67,4 @@
     "@babel/plugin-proposal-private-property-in-object": "^7.x.x"
   }
 }
+
