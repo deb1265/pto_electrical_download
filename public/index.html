@@ -4,8 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Your App</title>
+  <!-- Include the CSS from the build -->
+  <link href="/static/css/main.<hash>.chunk.css" rel="stylesheet">
 </head>
 <body>
   <div id="root"></div>
+  <!-- Include the JS files from the build -->
+  <script src="/static/js/2.<hash>.chunk.js"></script>
+  <script src="/static/js/main.<hash>.runtime-main.js"></script>
+  <script src="/static/js/main.<hash>.chunk.js"></script>
 </body>
 </html>
