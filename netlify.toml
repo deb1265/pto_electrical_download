@@ -1,0 +1,11 @@
+# netlify.toml
+[build]
+  command = "npm run build"
+  publish = "build/"
+  functions = "lambda/" # If you have serverless functions
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = true # Ensure that all requests go to index.html for SPA routing
